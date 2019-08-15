@@ -2,29 +2,24 @@
 
 const Devebot = require('devebot');
 const chores = Devebot.require('chores');
-const lodash = Devebot.require('lodash');
 
-function WebweaverTrigger(params) {
-  params = params || {};
-  let self = this;
+function WebweaverTrigger(params = {}) {
+  const L = params.loggingFactory.getLogger();
+  const T = params.loggingFactory.getTracer();
+  const blockRef = chores.getBlockRef(__filename, params.packageName || 'app-webweaver');
 
-  let LX = params.loggingFactory.getLogger();
-  let LT = params.loggingFactory.getTracer();
-  let packageName = params.packageName || 'app-webweaver';
-  let blockRef = chores.getBlockRef(__filename, packageName);
-
-  self.start = function() {
-    LX.has('silly') && LX.log('silly', LT.add({ blockRef }).toMessage({
+  this.start = function() {
+    L.has('silly') && L.log('silly', T.add({ blockRef }).toMessage({
       tags: [ blockRef, 'trigger-starting' ],
-      text: ' - trigger[${blockRef}] is starting'
+      tmpl: ' - trigger[${blockRef}] is starting'
     }));
     return Promise.resolve(params.webweaverService.combine());
   };
 
-  self.stop = function() {
-    LX.has('silly') && LX.log('silly', LT.add({ blockRef }).toMessage({
+  this.stop = function() {
+    L.has('silly') && L.log('silly', T.add({ blockRef }).toMessage({
       tags: [ blockRef, 'trigger-stopping' ],
-      text: ' - trigger[${blockRef}] is stopping'
+      tmpl: ' - trigger[${blockRef}] is stopping'
     }));
     return Promise.resolve();
   };

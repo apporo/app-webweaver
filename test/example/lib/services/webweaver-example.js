@@ -3,7 +3,6 @@
 var Devebot = require('devebot');
 var chores = Devebot.require('chores');
 var lodash = Devebot.require('lodash');
-var loader = Devebot.require('loader');
 var pinbug = Devebot.require('pinbug');
 var util = require('util');
 

@@ -14,26 +14,25 @@ const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
 
-function WebweaverService(params) {
-  params = params || {};
-  let self = this;
+function WebweaverService(params = {}) {
+  const L = params.loggingFactory.getLogger();
+  const T = params.loggingFactory.getTracer();
+  const blockRef = chores.getBlockRef(__filename, params.packageName || 'app-webweaver');
 
-  let LX = params.loggingFactory.getLogger();
-  let LT = params.loggingFactory.getTracer();
-  let packageName = params.packageName || 'app-webweaver';
-  let blockRef = chores.getBlockRef(__filename, packageName);
-
-  let pluginCfg = params.sandboxConfig || {};
+  const pluginCfg = params.sandboxConfig || {};
   let webserverTrigger = params["app-webserver/webserverTrigger"];
 
   let apporo = express();
+
+  // disable poweredBy
+  apporo.disable('X-Powered-By');
 
   let corsCfg = lodash.get(pluginCfg, "cors", {});
   if (corsCfg.enabled === true && corsCfg.mode === 'simple') {
     apporo.use(cors());
   }
 
-  Object.defineProperty(self, 'outlet', {
+  Object.defineProperty(this, 'outlet', {
     get: function() { return apporo },
     set: function(value) {}
   });
@@ -59,7 +58,7 @@ function WebweaverService(params) {
     next();
   }
 
-  self.getPrintRequestInfoLayer = function(branches, path) {
+  this.getPrintRequestInfoLayer = function(branches, path) {
     return {
       skipped: !pluginCfg.printRequestInfo,
       name: 'printRequestInfo',
@@ -69,7 +68,7 @@ function WebweaverService(params) {
     }
   }
 
-  self.getUrlSslProtectionLayer = function(branches, sslProtectedUrls) {
+  this.getUrlSslProtectionLayer = function(branches, sslProtectedUrls) {
     let sslUrls = sslProtectedUrls || pluginCfg.sslProtectedUrls || [];
     return {
       name: 'urlProtectionBySSL',
@@ -77,7 +76,7 @@ function WebweaverService(params) {
       middleware: function(req, res, next) {
         if (req.client.authorized) {
           next();
-          LX.has('silly') && LX.log('silly', LT.add({
+          L.has('silly') && L.log('silly', T.add({
             url: req.originalUrl
           }).toMessage({
             tags: [ blockRef, 'url-ssl-protection-layer', 'passed' ],
@@ -85,7 +84,7 @@ function WebweaverService(params) {
           }));
         } else {
           res.json({"status":"Access denied"}, 401);
-          LX.has('silly') && LX.log('silly', LT.add({
+          L.has('silly') && L.log('silly', T.add({
             url: req.originalUrl
           }).toMessage({
             tags: [ blockRef, 'url-ssl-protection-layer', 'denied' ],
@@ -97,7 +96,7 @@ function WebweaverService(params) {
     }
   }
 
-  self.getCacheControlLayer = function(branches, path) {
+  this.getCacheControlLayer = function(branches, path) {
     let cacheControlConfig = lodash.get(pluginCfg, ['cacheControl'], {});
     return {
       name: 'cacheControl',
@@ -118,7 +117,7 @@ function WebweaverService(params) {
   let sessionCookie = lodash.get(pluginCfg, 'session.cookie', null);
   let sessionInstance = null;
 
-  self.getSessionLayer = function(branches, path) {
+  this.getSessionLayer = function(branches, path) {
     if (sessionInstance === null) {
       let sessionOpts = {
         resave: true,
@@ -133,7 +132,7 @@ function WebweaverService(params) {
           sessionOpts.store = new fileStore({
             path: sessionStoreDef.path
           });
-          LX.has('silly') && LX.log('silly', LT.add({
+          L.has('silly') && L.log('silly', T.add({
             sessionStoreType: 'fileStore',
             urlOrPath: sessionStoreDef.path
           }).toMessage({
@@ -145,7 +144,7 @@ function WebweaverService(params) {
           sessionOpts.store = new redisStore({
             url: sessionStoreDef.url
           });
-          LX.has('silly') && LX.log('silly', LT.add({
+          L.has('silly') && L.log('silly', T.add({
             sessionStoreType: 'redisStore',
             urlOrPath: sessionStoreDef.url
           }).toMessage({
@@ -157,7 +156,7 @@ function WebweaverService(params) {
           sessionOpts.store = new mongoStore({
             url: sessionStoreDef.url
           });
-          LX.has('silly') && LX.log('silly', LT.add({
+          L.has('silly') && L.log('silly', T.add({
             sessionStoreType: 'mongoStore',
             urlOrPath: sessionStoreDef.url
           }).toMessage({
@@ -166,7 +165,7 @@ function WebweaverService(params) {
           }));
           break;
         default:
-          LX.has('silly') && LX.log('silly', LT.add({
+          L.has('silly') && L.log('silly', T.add({
             sessionStoreType: 'memoryStore'
           }).toMessage({
             tags: [ blockRef, 'session-store-set' ],
@@ -185,7 +184,7 @@ function WebweaverService(params) {
 
   let cookieParserInstance = null;
 
-  self.getCookieParserLayer = function(branches, path) {
+  this.getCookieParserLayer = function(branches, path) {
     cookieParserInstance = cookieParserInstance || cookieParser(sessionSecret);
     return {
       name: 'cookieParser',
@@ -197,7 +196,7 @@ function WebweaverService(params) {
 
   let jsonBodyParser = null;
 
-  self.getJsonBodyParserLayer = function(branches, path) {
+  this.getJsonBodyParserLayer = function(branches, path) {
     jsonBodyParser = jsonBodyParser || bodyParser.json({
       limit: pluginCfg.jsonBodySizeLimit || '2mb'
     });
@@ -211,7 +210,7 @@ function WebweaverService(params) {
 
   let urlencodedBodyParser = null;
 
-  self.getUrlencodedBodyParserLayer = function(branches, path) {
+  this.getUrlencodedBodyParserLayer = function(branches, path) {
     urlencodedBodyParser = urlencodedBodyParser || bodyParser.urlencoded({
       extended: true
     });
@@ -225,7 +224,7 @@ function WebweaverService(params) {
 
   let compressionInstance = null;
 
-  self.getCompressionLayer = function(branches, path) {
+  this.getCompressionLayer = function(branches, path) {
     compressionInstance = compressionInstance || require('compression')();
     return {
       name: 'compression',
@@ -237,7 +236,7 @@ function WebweaverService(params) {
 
   let csrfInstance = null;
 
-  self.getCsrfLayer = function(branches, path) {
+  this.getCsrfLayer = function(branches, path) {
     csrfInstance = csrfInstance || require('csurf')({ cookie: { signed: true } });
     return {
       name: 'csurf',
@@ -249,7 +248,7 @@ function WebweaverService(params) {
 
   let helmetInstance = null;
 
-  self.getHelmetLayer = function(branches, path) {
+  this.getHelmetLayer = function(branches, path) {
     helmetInstance = helmetInstance || require('helmet')();
     return {
       name: 'helmet',
@@ -261,7 +260,7 @@ function WebweaverService(params) {
 
   let methodOverrideInstance = null;
 
-  self.getMethodOverrideLayer = function(branches, path) {
+  this.getMethodOverrideLayer = function(branches, path) {
     methodOverrideInstance = methodOverrideInstance || require('method-override')();
     return {
       name: 'methodOverride',
@@ -271,28 +270,16 @@ function WebweaverService(params) {
     }
   }
 
-  self.getChangePowerByLayer = function(branches, path) {
-    let middleware = null;
-    if (pluginCfg.setPoweredBy) {
-      middleware = function setPoweredBy(req, res, next) {
-        res.setHeader('X-Powered-By', pluginCfg.setPoweredBy);
-        next();
-      };
-    } else {
-      middleware = function hidePoweredBy(req, res, next) {
-        res.removeHeader('X-Powered-By');
-        next();
-      };
-    }
+  this.getChangePowerByLayer = function(branches, path) {
     return {
       name: 'changePowerBy',
       path: path,
-      middleware: middleware,
+      middleware: getMiddlewareChangePoweredBy(pluginCfg.setPoweredBy),
       branches: branches
     }
   }
 
-  self.getDefaultRedirectLayer = function(path) {
+  this.getDefaultRedirectLayer = function(path) {
     let layer = {
       skipped: true,
       name: 'defaultRedirect',
@@ -309,13 +296,13 @@ function WebweaverService(params) {
 
   //---------------------------------------------------------------------------
 
-  self.createStaticFilesLayer = function(layerDef, staticFilesDir) {
+  this.createStaticFilesLayer = function(layerDef, staticFilesDir) {
     return lodash.merge({}, layerDef, {
       middleware: express.static(staticFilesDir)
     });
   }
 
-  self.settleBranchQueueLayer = function(branchQueue, name) {
+  this.settleBranchQueueLayer = function(branchQueue, name) {
     branchQueue = branchQueue || {
       name: name || 'app-webweaver-unknown',
       middleware: express()
@@ -335,7 +322,7 @@ function WebweaverService(params) {
     if (layer.enabled !== false) {
       if (layer.skipped !== true && lodash.isFunction(layer.middleware)) {
         if (layer.path) {
-          LX.has('silly') && LX.log('silly', LT.add({
+          L.has('silly') && L.log('silly', T.add({
             footprint: footprint,
             path: lodash.isString(layer.path) ? layer.path : JSON.stringify(layer.path)
           }).toMessage({
@@ -346,18 +333,14 @@ function WebweaverService(params) {
             slot.use(layer.path, layer.middleware);
           }
         } else {
-          LX.has('silly') && LX.log('silly', LT.add({
-            footprint: footprint
-          }).toMessage({
+          L.has('silly') && L.log('silly', T.add({ footprint }).toMessage({
             tags: [ blockRef, 'wire-layer', 'layer-path-off' ],
             text: ' - layer[${footprint}] handles any request'
           }));
           slot.use(layer.middleware);
         }
       } else {
-        LX.has('silly') && LX.log('silly', LT.add({
-          footprint: footprint
-        }).toMessage({
+        L.has('silly') && L.log('silly', T.add({ footprint }).toMessage({
           tags: [ blockRef, 'wire-layer', 'layer-skipped' ],
           text: ' - layer[${footprint}] is skipped'
         }));
@@ -366,9 +349,7 @@ function WebweaverService(params) {
         slot.use(wireBranches(null, layer.branches, layer.trails));
       }
     } else {
-      LX.has('silly') && LX.log('silly', LT.add({
-        footprint: footprint
-      }).toMessage({
+      L.has('silly') && L.log('silly', T.add({ footprint }).toMessage({
         tags: [ blockRef, 'wire-layer', 'layer-disabled' ],
         text: ' - layer[${footprint}] is disabled'
       }));
@@ -384,7 +365,7 @@ function WebweaverService(params) {
     return slot;
   }
 
-  self.wire = function(slot, layerOrBranches, superTrail) {
+  this.wire = function(slot, layerOrBranches, superTrail) {
     if (lodash.isArray(layerOrBranches)) {
       return wireBranches(slot, layerOrBranches, superTrail);
     } else {
@@ -397,27 +378,26 @@ function WebweaverService(params) {
   let bundles = [];
   let bundleFreezed = false;
 
-  self.push = function(layerOrBranches, priority) {
+  this.push = function(layerOrBranches, priority) {
     if (bundleFreezed) {
-      LX.has('silly') && LX.log('silly', LT.toMessage({
+      L.has('silly') && L.log('silly', T.toMessage({
         tags: [ blockRef, 'inject', 'freezed' ],
         text: ' - inject(), but bundles has been freezed'
       }));
     } else {
       priority = lodash.isNumber(priority) ? priority : 0;
       bundles.push({ layerPack: layerOrBranches, priority: priority });
-      LX.has('silly') && LX.log('silly', LT.add({
-        priority: priority
-      }).toMessage({
+      L.has('silly') && L.log('silly', T.add({ priority }).toMessage({
         tags: [ blockRef, 'inject', 'injected' ],
         text: ' - inject() layerweb is injected to #${priority}'
       }));
     }
   }
 
-  self.combine = function() {
+  this.combine = function() {
+    const self = this;
     if (bundleFreezed) {
-      LX.has('silly') && LX.log('silly', LT.toMessage({
+      L.has('silly') && L.log('silly', T.toMessage({
         tags: [ blockRef, 'combine', 'freezed' ],
         text: ' - combine(), but bundles has been freezed'
       }));
@@ -429,8 +409,9 @@ function WebweaverService(params) {
       lodash.forEach(sortedBundles, function(bundle) {
         self.wire(apporo, bundle.layerPack);
       });
+      applyNotFound(apporo);
       applyErrorHandler(apporo);
-      LX.has('silly') && LX.log('silly', LT.toMessage({
+      L.has('silly') && L.log('silly', T.toMessage({
         tags: [ blockRef, 'combine', 'combined' ],
         text: ' - combine(): bundles has been combined'
       }));
@@ -438,7 +419,7 @@ function WebweaverService(params) {
   }
 
   // Deprecated
-  self.inject = self.push;
+  this.inject = this.push;
 
   //---------------------------------------------------------------------------
 
@@ -550,7 +531,7 @@ function WebweaverService(params) {
 
   //---------------------------------------------------------------------------
 
-  Object.defineProperties(self, {
+  Object.defineProperties(this, {
     express: {
       get: function() { return express },
       set: function(value) {}
@@ -565,3 +546,25 @@ function WebweaverService(params) {
 WebweaverService.referenceList = [ "app-webserver/webserverTrigger" ];
 
 module.exports = WebweaverService;
+
+function applyNotFound (slot) {
+  slot.use(function (req, res, next) {
+    return res.status(404).end();
+  });
+}
+
+function getMiddlewareChangePoweredBy(powerByLabel) {
+  let middleware = null;
+  if (powerByLabel) {
+    middleware = function setPoweredBy(req, res, next) {
+      res.setHeader('X-Powered-By', powerByLabel);
+      next();
+    };
+  } else {
+    middleware = function hidePoweredBy(req, res, next) {
+      res.removeHeader('X-Powered-By');
+      next();
+    };
+  }
+  return middleware;
+};
