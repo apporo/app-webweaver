@@ -54,7 +54,7 @@ var Service = function(params) {
     return {
       name: 'app2',
       middleware: (function() {
-        var app2 = express();
+        var app2 = express.Router();
         app2.get('/example/:id', function(req, res) {
           res.status(200).json({
             message: 'example [' + req.params.id + '] request successfully'

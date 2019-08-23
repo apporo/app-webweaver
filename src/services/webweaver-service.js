@@ -21,10 +21,19 @@ function WebweaverService(params = {}) {
   const blockRef = chores.getBlockRef(__filename, packageName || 'app-webweaver');
   const pluginCfg = sandboxConfig || {};
 
-  const apporo = express();
+  //---------------------------------------------------------------------------
 
-  // disable poweredBy
-  apporo.disable('X-Powered-By');
+  const newOutlet = function () {
+    const app = express();
+    app.set('x-powered-by', false);
+    app.set('etag', false);
+    app.set('trust proxy', true);
+    return app;
+  }
+
+  //---------------------------------------------------------------------------
+
+  const apporo = newOutlet();
 
   let corsCfg = lodash.get(pluginCfg, "cors", {});
   if (corsCfg.enabled === true && corsCfg.mode === 'simple') {
@@ -302,7 +311,7 @@ function WebweaverService(params = {}) {
   this.settleBranchQueueLayer = function(branchQueue, name) {
     branchQueue = branchQueue || {
       name: name || 'app-webweaver-unknown',
-      middleware: express()
+      middleware: express.Router()
     };
     return branchQueue;
   }
@@ -310,7 +319,7 @@ function WebweaverService(params = {}) {
   //---------------------------------------------------------------------------
 
   let wireLayer = function(slot, layer, superTrail) {
-    slot = slot || express();
+    slot = slot || express.Router();
     superTrail = superTrail || [];
     if (layer === null) return slot;
     layer.trails = superTrail.slice(0);
@@ -355,7 +364,7 @@ function WebweaverService(params = {}) {
   }
 
   let wireBranches = function(slot, layers, superTrail) {
-    slot = slot || express();
+    slot = slot || express.Router();
     lodash.forEach(layers, function(layer) {
       wireLayer(slot, layer, superTrail);
     });
