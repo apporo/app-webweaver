@@ -15,14 +15,13 @@ const cookieParser = require('cookie-parser');
 const cors = require('cors');
 
 function WebweaverService(params = {}) {
-  const L = params.loggingFactory.getLogger();
-  const T = params.loggingFactory.getTracer();
-  const blockRef = chores.getBlockRef(__filename, params.packageName || 'app-webweaver');
+  const { packageName, loggingFactory, sandboxConfig } = params;
+  const L = loggingFactory.getLogger();
+  const T = loggingFactory.getTracer();
+  const blockRef = chores.getBlockRef(__filename, packageName || 'app-webweaver');
+  const pluginCfg = sandboxConfig || {};
 
-  const pluginCfg = params.sandboxConfig || {};
-  let webserverTrigger = params["app-webserver/webserverTrigger"];
-
-  let apporo = express();
+  const apporo = express();
 
   // disable poweredBy
   apporo.disable('X-Powered-By');
@@ -36,8 +35,6 @@ function WebweaverService(params = {}) {
     get: function() { return apporo },
     set: function(value) {}
   });
-
-  webserverTrigger.attach(apporo);
 
   //---------------------------------------------------------------------------
 
@@ -83,7 +80,7 @@ function WebweaverService(params = {}) {
             text: ' - Passed Client: ${url}'
           }));
         } else {
-          res.json({"status":"Access denied"}, 401);
+          res.json({ "status": "Access denied" }, 401);
           L.has('silly') && L.log('silly', T.add({
             url: req.originalUrl
           }).toMessage({
@@ -127,7 +124,7 @@ function WebweaverService(params = {}) {
         cookie: sessionCookie
       };
       let sessionStoreDef = lodash.get(pluginCfg, ['session', 'store'], {});
-      switch(sessionStoreDef.type) {
+      switch (sessionStoreDef.type) {
         case 'file':
           sessionOpts.store = new fileStore({
             path: sessionStoreDef.path
@@ -416,6 +413,7 @@ function WebweaverService(params = {}) {
         text: ' - combine(): bundles has been combined'
       }));
     }
+    return apporo;
   }
 
   // Deprecated
@@ -517,18 +515,6 @@ function WebweaverService(params = {}) {
     });
   }
 
-  let stringify = function(data) {
-    if (data === undefined) data = null;
-    if (typeof(data) === 'string') return data;
-    var json = null;
-    try {
-      json = JSON.stringify(data);
-    } catch (error) {
-      json = JSON.stringify({ message: 'JSON.stringify() error' });
-    }
-    return json;
-  }
-
   //---------------------------------------------------------------------------
 
   Object.defineProperties(this, {
@@ -542,8 +528,6 @@ function WebweaverService(params = {}) {
     }
   });
 };
-
-WebweaverService.referenceList = [ "app-webserver/webserverTrigger" ];
 
 module.exports = WebweaverService;
 
