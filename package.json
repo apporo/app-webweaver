@@ -9,9 +9,6 @@
     "url": "https://github.com/apporo"
   },
   "main": "index.js",
-  "directories": {
-    "lib": "lib/"
-  },
   "files": [
     "bin/",
     "config/",

@@ -5,6 +5,7 @@ module.exports = {
   plugins: {
     appWebweaver: {
       defaultRedirectUrl: '/example/dashboard',
+      printRequestInfo: true,
       cors: {
         enabled: true,
         mode: 'simple'

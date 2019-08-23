@@ -3,7 +3,6 @@
 const Devebot = require('devebot');
 const chores = Devebot.require('chores');
 const lodash = Devebot.require('lodash');
-const pinbug = Devebot.require('pinbug');
 
 const express = require('express');
 const session = require('express-session');
@@ -47,19 +46,17 @@ function WebweaverService(params = {}) {
 
   //---------------------------------------------------------------------------
 
-  let debugx = null;
   let printRequestInfoInstance = function(req, res, next) {
-    debugx = debugx || pinbug('app-webweaver:service');
     process.nextTick(function() {
-      debugx.enabled && debugx('=@ webweaver receives a new request:');
-      debugx.enabled && debugx(' - IP: %s / %s', req.ip, JSON.stringify(req.ips));
-      debugx.enabled && debugx(' - protocol: ' + req.protocol);
-      debugx.enabled && debugx(' - host: ' + req.hostname);
-      debugx.enabled && debugx(' - path: ' + req.path);
-      debugx.enabled && debugx(' - URL: ' + req.url);
-      debugx.enabled && debugx(' - originalUrl: ' + req.originalUrl);
-      debugx.enabled && debugx(' - body: ' + JSON.stringify(req.body));
-      debugx.enabled && debugx(' - user-agent: ' + req.headers['user-agent']);
+      L.has('silly') && L.log('silly', '=@ webweaver receives a new request:');
+      L.has('silly') && L.log('silly', ' - IP: %s / %s', req.ip, JSON.stringify(req.ips));
+      L.has('silly') && L.log('silly', ' - protocol: ' + req.protocol);
+      L.has('silly') && L.log('silly', ' - host: ' + req.hostname);
+      L.has('silly') && L.log('silly', ' - path: ' + req.path);
+      L.has('silly') && L.log('silly', ' - URL: ' + req.url);
+      L.has('silly') && L.log('silly', ' - originalUrl: ' + req.originalUrl);
+      L.has('silly') && L.log('silly', ' - body: ' + JSON.stringify(req.body));
+      L.has('silly') && L.log('silly', ' - user-agent: ' + req.headers['user-agent']);
     });
     next();
   }
