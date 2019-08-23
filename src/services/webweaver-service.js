@@ -30,6 +30,12 @@ function WebweaverService(params = {}) {
     return app;
   }
 
+  this.newOutlet = newOutlet;
+
+  this.newRouter = function () {
+    return express.Router();
+  }
+
   //---------------------------------------------------------------------------
 
   const apporo = newOutlet();
