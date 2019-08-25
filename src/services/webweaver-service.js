@@ -25,8 +25,12 @@ function WebweaverService(params = {}) {
   const newOutlet = function () {
     const app = express();
     app.set('x-powered-by', false);
-    app.set('etag', false);
-    app.set('trust proxy', true);
+    if (pluginCfg.hasETag === false) {
+      app.set('etag', false);
+    }
+    if (pluginCfg.trustProxy !== false) {
+      app.set('trust proxy', true);
+    }
     return app;
   }
 
